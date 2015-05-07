@@ -4,27 +4,27 @@
 
 @echo off
 CD /D %~dp1
-FOR %%i IN (.py .pyw .c .cpp .less .js) DO (
-	IF %~x1 EQU %i GOTO %~x1
+FOR %%i IN (py pyw c cpp less js) DO (
+	IF %~x1 EQU .%%i GOTO %%i
 )
 cmd /c start "" /d"%~dp1" "%~nx1"
-GOTO exit
+GOTO :eof
 
-:.py
-:.pyw
+:py
+:pyw
 	:: Run python script
 	py "%~n1%~x1"
 	GOTO end
 	
 	
-:.c
+:c
 	:: Compile C
 	gcc -lm -O2 -pipe -DONLINE_JUDGE -o %~n1.exe %~n1%~x1
 	if errorlevel 1 goto end
 	echo Compile finished..
 	GOTO execute
 
-:.cpp
+:cpp
 	:: Compile CPP
 	g++ -lm -O2 -pipe -DONLINE_JUDGE -o %~n1.exe %~n1%~x1
 	if errorlevel 1 goto end
@@ -36,12 +36,12 @@ GOTO exit
 	%~n1
 	goto end
 	
-:.less
+:less
 	:: Compile Less
 	lessc %~n1%~x1
 	goto end
 	
-:.js
+:js
 	:: Run node script
 	set "NODE_PATH=C:\Users\Owner\AppData\Roaming\npm\node_modules"
 	node %~n1%~x1
@@ -50,5 +50,3 @@ GOTO exit
 :end
 	echo.
 	PAUSE
-
-:exit
