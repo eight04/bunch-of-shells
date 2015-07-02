@@ -46,7 +46,7 @@ GOTO :eof
 :js
 	:: Run node script
 	set "NODE_PATH=C:\Users\Owner\AppData\Roaming\npm\node_modules"
-	node %~n1%~x1
+	node --harmony %~n1%~x1
 	goto end
 
 :bat
