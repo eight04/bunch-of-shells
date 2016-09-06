@@ -41,10 +41,17 @@ for file in path.glob("*.zip"):
 			
 	if not index:
 		id = re.search(r"^\d+", file.stem).group()
-		html = grabhtml(
-			"http://www.pixiv.net/member_illust.php?mode=medium&illust_id={id}".format(id=id),
-			cookie=pixiv.cookie
-		)
+		url = "http://www.pixiv.net/member_illust.php?mode=medium&illust_id={id}".format(id=id)
+		print(url)
+		try:
+			html = grabhtml(
+				url,
+				cookie=pixiv.cookie
+			)
+		except Exception:
+			print("failed and skipped")
+			continue
+			
 		js_src = re.search(
 			r"pixiv\.context\.ugokuIllustFullscreenData\s+= ([^;]+)",
 			html
