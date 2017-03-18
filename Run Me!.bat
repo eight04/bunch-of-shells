@@ -4,13 +4,18 @@
 
 @echo off
 CD /D %~dp1
-FOR %%i IN (py pyw c cpp less js bat) DO (
+FOR %%i IN (py pyw c cpp less js bat sh) DO (
 	IF [%~x1]==[.%%i] (
 		GOTO %%i
 	)
 )
 cmd /c start "" /d"%~dp1" "%~nx1"
 GOTO :eof
+
+:sh
+	:: Run shell script
+	bash "%~n1%~x1"
+	GOTO end
 
 :py
 :pyw
