@@ -7,18 +7,21 @@ import re
 import execjs
 import subprocess
 import io
+import traceback
 
 from zipfile import ZipFile
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from send2trash import send2trash
-from comiccrawler.core import grabhtml
+from comiccrawler.core import Downloader
 from comiccrawler.mods import pixiv
 
 FFMPEG = r"D:\Programs\ffmpeg-20160527-git-d970f7b-win64-static\bin\ffmpeg.exe"
 
 path = Path(sys.argv[1])
+
+downloader = Downloader(pixiv)
 
 def find_delay(index):
 	delay = index[0][1]
@@ -44,19 +47,15 @@ for file in path.glob("*.zip"):
 		url = "http://www.pixiv.net/member_illust.php?mode=medium&illust_id={id}".format(id=id)
 		print(url)
 		try:
-			html = grabhtml(
-				url,
-				cookie=pixiv.cookie
-			)
+			html = downloader.html(url)
+			js_src = re.search(
+				r"pixiv\.context\.ugokuIllustFullscreenData\s+= ([^;]+)",
+				html
+			).group(1)
 		except Exception:
-			print("failed and skipped")
+			traceback.print_exc()
 			continue
 			
-		js_src = re.search(
-			r"pixiv\.context\.ugokuIllustFullscreenData\s+= ([^;]+)",
-			html
-		)
-		js_src = js_src.group(1)
 		frames = execjs.eval(js_src)["frames"]
 		
 		index = [(f["file"], f["delay"]) for f in frames]
