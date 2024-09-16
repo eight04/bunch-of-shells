@@ -15,8 +15,11 @@ class ClosersChecker {
   Update(PID) {
     If PID {
       this.InitPath(PID)
-      FileMove(this.Path, this.PathBackup)
-      FileCopy(this.PathMyFont, this.Path)
+      try {
+        ; this may fail when CW.EXE is running
+        FileMove(this.Path, this.PathBackup)
+        FileCopy(this.PathMyFont, this.Path)
+      }
       return
     }
 
@@ -37,14 +40,16 @@ class ClosersChecker {
 }
 
 class NikkeChecker {
+  __New() {
+    this.timer := () => ProcessClose("tbs_browser.exe")
+  }
+
   Check() {
-    return !!(ProcessExist("nikke_launcher_hmt.exe") || ProcessExist("nikke.exe"))
+    return ProcessExist("tbs_browser.exe") && !ProcessExist("intl_service.exe") && !ProcessExist("nikke.exe")
   }
 
   Update(state) {
-    if (!state) {
-      ProcessKillAll("tbs_browser.exe")
-    }
+    SetTimer(this.timer, state ? 1000 : 0)
   }
 }
 
@@ -66,8 +71,10 @@ Init(checkers) {
   }
 }
 
+A_TrayMenu.add("Kill tbs_browser", (name, pos, menu) => ProcessKillAll("tbs_browser.exe"))
+
 ProcessKillAll(name) {
   While (PID := ProcessClose(name)) {
-    ProcessWaitClose(PID)
+    Sleep(1000)
   }
 }
