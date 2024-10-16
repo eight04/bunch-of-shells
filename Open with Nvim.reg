@@ -1,5 +1,9 @@
 Windows Registry Editor Version 5.00 
 
+; Related issues
+; https://github.com/neovim/neovim/issues/6649
+; https://github.com/neovide/neovide/issues/94
+
 [HKEY_LOCAL_MACHINE\SOFTWARE\Classes\*\shell\Open with nvim]
 "MUIVerb"="Open with nvim"
 "icon"="C:\\Program Files\\Neovim\\share\\nvim\\runtime\\neovim.ico"
