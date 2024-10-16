@@ -1,0 +1,21 @@
+Windows Registry Editor Version 5.00 
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\*\shell\Open with nvim]
+"MUIVerb"="Open with nvim"
+"icon"="C:\\Program Files\\Neovim\\share\\nvim\\runtime\\neovim.ico"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\*\shell\Open with nvim\command]
+; by configuring wt to open to new tab, we can get a "single instance" mode
+; having a single wt window with multiple nvims in wt tabs.
+;
+; I think it is possible to implement --remote-tab-silent by printing `v:servername`
+; to a file to track the last active nvim instance, then write a launcher to send
+; the file to nvim. More advanced, it has to track closed instances.
+@="wt nvim \"%1\""
+
+; [HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Directory\shell\Open with nvim]
+; "MUIVerb"="Open with nvim"
+; "icon"="C:\\Program Files\\Neovim\\share\\nvim\\runtime\\neovim.ico"
+;
+; [HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Directory\shell\Open with nvim\command]
+; @="wt nvim \"%1\""
