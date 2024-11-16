@@ -1,8 +1,22 @@
 Windows Registry Editor Version 5.00
 
-[HKEY_CLASSES_ROOT\*\Shell\Vim]
-@="Edit with &Vim"
-"Icon"="\"C:\\Program Files\\Vim\\vim82\\gvim.exe\""
+; It is hard to have a context menu to edit files in new tab.
+;
+; the built-in gvim extension - relies on drop handler - can only split
+; https://github.com/vim/vim/blob/5c66e23c624717216d380d938d0bba5d34a004fe/src/GvimExt/gvimext.cpp#L888
+; https://stackoverflow.com/questions/1891513/can-i-force-gvim-to-open-dragged-in-files-in-a-new-tab
+;
+; autocmd - breaks sessions
+; https://vim.fandom.com/wiki/Launch_files_in_new_tabs_under_Windows#:~:text=Using%20an-,auto%20command,-Another%20solution%20is
+;
+; gvimt - get "--remote-tab-silent is not executable" error
+; https://www.vim.org/scripts/script.php?script_id=4214
+; 
 
-[HKEY_CLASSES_ROOT\*\Shell\Vim\command]
-@="\"C:\\Program Files\\Vim\\vim82\\gvim.exe\" --remote-tab-silent \"%1\""
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\*\shell\Edit with vim]
+"MUIVerb"="Edit with &Vim"
+"icon"="C:\\Program Files\\Vim\\vim91\\gvim.exe"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\*\shell\Edit with vim\command]
+@="\"C:\\Program Files\\Vim\\vim91\\gvim.exe\" --remote-tab-silent \"%1\""
+
