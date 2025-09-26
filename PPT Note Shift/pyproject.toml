@@ -1,0 +1,2 @@
+[project]
+dependencies = ["python-pptx~=1.0"]
