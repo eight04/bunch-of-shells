@@ -1,6 +1,7 @@
 from pathlib import Path
 import sys
 
+# requirements: python-pptx
 from pptx import Presentation
 
 p = sys.argv[1]
