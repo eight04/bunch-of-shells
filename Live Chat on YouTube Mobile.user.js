@@ -105,7 +105,8 @@ function initMainPage() {
       content.includes("人が視聴中") ||
       content.includes("a ver agora") ||
       content.includes("assistindo agora") ||
-      content.includes("spettatori attuali")
+      content.includes("spettatori attuali") ||
+      content.includes("人正在等候")
   }
 
   function isArchive() {
