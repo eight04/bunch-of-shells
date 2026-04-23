@@ -13,10 +13,11 @@ Windows Registry Editor Version 5.00
 ; https://www.vim.org/scripts/script.php?script_id=4214
 ; 
 
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\*\shell\Edit with vim]
-"MUIVerb"="Edit with &Vim"
-"icon"="C:\\Program Files\\Vim\\vim91\\gvim.exe"
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\*\shell\Edit with vim\command]
-@="\"C:\\Program Files\\Vim\\vim91\\gvim.exe\" --remote-tab-silent \"%1\""
-
+; [-HKEY_LOCAL_MACHINE\SOFTWARE\Classes\*\shell\Edit with vim]
+; "MUIVerb"="Edit with &Vim"
+; "icon"="C:\\Program Files\\Vim\\vim91\\gvim.exe"
+;
+; [-HKEY_LOCAL_MACHINE\SOFTWARE\Classes\*\shell\Edit with vim\command]
+; @="\"C:\\Program Files\\Vim\\vim91\\gvim.exe\" --remote-tab-silent \"%1\""
+;
+; now I switched to vimer: https://github.com/susam/vimer
