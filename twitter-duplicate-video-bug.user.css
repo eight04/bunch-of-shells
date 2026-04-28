@@ -1,0 +1,14 @@
+/* ==UserStyle==
+@name         Twitter Duplicate Video Bug Fix
+@namespace    USO Archive
+@version      26.4.29
+@description  Fixes the duplicate video bug on Twitter where videos appear twice in the feed.
+@author       Your Name
+@grant        none
+==/UserStyle== */
+
+@-moz-document domain("x.com") {
+  #layers div[role="dialog"] {
+    display: none !important;
+  }
+}
