@@ -66,6 +66,7 @@ function initMainPage() {
   // CONFIGURATION
   const AUTO_HIDE_CHAT_BUTTON = true; // If true, the button only appears when a Live/Premiere is detected
   const AUTO_SHOW_CHAT = false; // If true, the chat automatically opens when a Live/Premiere loads.
+  const IFRAME_RESET_ON_CLOSE = true; // If true, the iframe src resets to about:blank when chat is closed to free up resources
 
   let currentVideoId = null,
     isIframeLoaded = false,
@@ -167,10 +168,18 @@ function initMainPage() {
       elements.button.innerText = "💬";
       document.body.classList.remove("chat-open-no-scroll");
       isChatVisible = false;
+
+      if (IFRAME_RESET_ON_CLOSE) {
+        elements.chatIframe.src = "about:blank";
+        isIframeLoaded = false;
+      }
     }
   };
 
   const showChat = () => {
+    if (elements.chatIframe.src === "about:blank") {
+      preloadChatIframe({forced: true});
+    }
     updateChatPosition();
     elements.chatContainer.style.display = "block";
     document.body.classList.add("chat-open-no-scroll");
@@ -197,14 +206,15 @@ function initMainPage() {
     }
   };
 
-  const preloadChatIframe = () => {
+  const preloadChatIframe = ({forced = false} = {}) => {
     const videoId = getVideoId();
 
     if (
       isVideoPage() &&
       videoId &&
       shouldShowChatButton() &&
-      videoId !== currentVideoId
+      videoId !== currentVideoId ||
+      forced
     ) {
       currentVideoId = videoId;
       isIframeLoaded = false;
@@ -260,7 +270,7 @@ function initMainPage() {
       currentVideoId = null;
       isIframeLoaded = false;
       iframeLoadFailed = false;
-      elements.chatIframe.src = "";
+      elements.chatIframe.src = "about:blank";
     }
 
     setButtonVisibility(onVideoPage);
@@ -451,6 +461,9 @@ function initMainPage() {
       setButtonVisibility(isVideoPage());
       if (!timer) {
         timer = setInterval(() => {
+          if (!elements.chatIframe.src.includes("live_chat_replay")) {
+            return;
+          }
           if (!elements.video.offsetParent) {
             updateDOMElementsCache();
           }
