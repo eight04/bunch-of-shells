@@ -15,6 +15,64 @@
 
 const getVideoId = () => (window.location.search.match(/v=([^&]+)/) || [])[1];
 
+class IframeState {
+  el = null;
+  _src = 'about:blank';
+  loaded = false;
+  error = null;
+  abortController = null;
+
+  constructor(el) {
+    this.el = el;
+
+    // NOTE: iframe has no error event
+    this.el.addEventListener('load', () => {
+      this.loaded = true;
+      this.error = null;
+    });
+  }
+
+  get src() {
+    return this._src;    
+  }
+  set src(value) {
+    this._src = value;
+    this.loaded = false;
+    this.error = null;
+    this.el.contentWindow.location.replace(value);
+    this.abortController?.abort();
+    this.abortController = new AbortController();
+    // FIXME: abort after 20s? does it make sense?
+  }
+
+  waitUntilLoaded() {
+    return new Promise((resolve, reject) => {
+      if (this.loaded) {
+        resolve();
+        return;
+      }
+      if (this.abortController?.signal.aborted) {
+        reject(new Error('Iframe load aborted'));
+        return;
+      }
+      const onLoad = () => {
+        cleanup();
+        resolve();
+      };
+      const onAbort = () => {
+        cleanup();
+        reject(new Error('Iframe load aborted'));
+      };
+      const cleanup = () => {
+        this.el.removeEventListener('load', onLoad);
+        this.abortController?.signal.removeEventListener('abort', onAbort);
+      };
+      this.el.addEventListener('load', onLoad);
+      this.abortController?.signal.addEventListener('abort', onAbort);
+    });
+  }
+}
+
 function getContinuation() {
   return new Promise((resolve, reject) => {
     const url = `https://www.youtube.com/watch?v=${getVideoId()}`;
@@ -53,13 +111,22 @@ if (location.pathname.startsWith("/live_chat_replay")) {
 }
 
 function initLiveChatReplay() {
-  // live_chat_replay doesn't accept messages from different origins, so we need to re-post them from the iframe itself
-  window.addEventListener("message", (event) => {
-    if (event.data && event.data.washOrigin && event.data.data) {
-      const data = event.data.data;
-      window.postMessage(data, "*");
+  if (window.parent === window) return;
+
+  window.addEventListener("message", ({data}) => {
+    if (data?.method === "getCurrentTimeResponse") {
+      const newData = { "yt-player-video-progress": data.currentTime };
+      // NOTE: live_chat_replay doesn't accept messages from different origins, so we need to re-post them from the iframe itself
+      window.postMessage(newData, "*");
     }
   });
+
+  setInterval(() => {
+    if (document.hidden) return;
+    window.parent.postMessage({method: "getCurrentTime"}, "*");
+  }, 1000);
+
+  // TODO: report sub-frame-error-details to parent
 }
 
 function initMainPage() {
@@ -69,14 +136,29 @@ function initMainPage() {
   const IFRAME_RESET_ON_CLOSE = true; // If true, the iframe src resets to about:blank when chat is closed to free up resources
 
   let currentVideoId = null,
-    isIframeLoaded = false,
     observer = null,
     previousWidth = window.innerWidth,
-    isChatVisible = false,
-    iframeLoadTimeout = null,
-    iframeLoadFailed = false;
+    isChatVisible = false;
   const elements = {};
-  let timer;
+  let iframeState = null;
+
+  const initializeMessageListener = () => {
+    window.addEventListener("message", e => {
+      if (e.source && e.source !== elements.chatIframe.contentWindow) return;
+
+      if (e.data?.method === "getCurrentTime") {
+        if (!elements.video.offsetParent) {
+          updateDOMElementsCache();
+        }
+        const currentTime = elements.video?.currentTime;
+        if (!currentTime) return;
+        elements.chatIframe.contentWindow.postMessage(
+          { method: "getCurrentTimeResponse", currentTime },
+          "*",
+        );
+      }
+    });
+  };
 
   const isVideoPage = () =>
     window.location.pathname === "/watch" &&
@@ -118,12 +200,10 @@ function initMainPage() {
   const showErrorMessage = () => {
     elements.loader.style.display = "none";
     elements.errorContainer.style.display = "flex";
-    iframeLoadFailed = true;
   };
 
   const hideErrorMessage = () => {
     elements.errorContainer.style.display = "none";
-    iframeLoadFailed = false;
   };
   const showLoader = (darkbackground = "#111") => {
     elements.loader.style.display = "block";
@@ -170,14 +250,13 @@ function initMainPage() {
       isChatVisible = false;
 
       if (IFRAME_RESET_ON_CLOSE) {
-        elements.chatIframe.src = "about:blank";
-        isIframeLoaded = false;
+        iframeState.src = "about:blank";
       }
     }
   };
 
   const showChat = () => {
-    if (elements.chatIframe.src === "about:blank") {
+    if (iframeState.src === "about:blank") {
       preloadChatIframe({forced: true});
     }
     updateChatPosition();
@@ -186,14 +265,15 @@ function initMainPage() {
     elements.button.innerText = "✖️";
     isChatVisible = true;
 
-    if (iframeLoadFailed) {
+    if (iframeState.error) {
       showErrorMessage();
-    } else if (!isIframeLoaded) {
-      showLoader();
+    // } else if (!iframeState.loaded) {
+    //   showLoader();
     } else {
       hideLoader();
     }
-    elements.chatIframe.focus();
+    // FIXME: why do we need focus
+    // elements.chatIframe.focus();
   };
 
   const toggleChat = () => {
@@ -217,12 +297,8 @@ function initMainPage() {
       forced
     ) {
       currentVideoId = videoId;
-      isIframeLoaded = false;
-      iframeLoadFailed = false;
       hideErrorMessage();
-      clearTimeout(iframeLoadTimeout);
 
-      elements.chatIframe.style.opacity = "0";
       const getNewIframeSrc = async () => {
         if (isLive()) {
           console.log("Detected live stream, loading live chat");
@@ -232,14 +308,19 @@ function initMainPage() {
         const continuation = await getContinuation();
         return `https://www.youtube.com/live_chat_replay?embed_domain=${window.location.hostname}&dark_theme=1&continuation=${continuation}`;
       };
-      getNewIframeSrc().then((src) => {
-        elements.chatIframe.contentWindow.location.replace(src); // Use replace to avoid adding to history
-        iframeLoadTimeout = setTimeout(() => {
-          iframeLoadFailed = true;
-          if (isChatVisible) showErrorMessage();
-        }, 20000);
+      getNewIframeSrc().then(async (src) => {
+        showLoader();
+        try {
+          iframeState.src = src;
+          await iframeState.waitUntilLoaded();
+        } catch (error) {
+          console.error("Error loading chat iframe:", error);
+          showErrorMessage();
+        } finally {
+          hideLoader();
+        }
       });
-    } else if (videoId === currentVideoId && isIframeLoaded) {
+    } else if (videoId === currentVideoId && iframeState.loaded) {
       setButtonVisibility(true);
     }
   };
@@ -268,9 +349,7 @@ function initMainPage() {
       elements.videoPlayer = null;
       elements.infoContainer = null;
       currentVideoId = null;
-      isIframeLoaded = false;
-      iframeLoadFailed = false;
-      elements.chatIframe.src = "about:blank";
+      iframeState.src = "about:blank";
     }
 
     setButtonVisibility(onVideoPage);
@@ -337,6 +416,8 @@ function initMainPage() {
       opacity: "0",
     });
     elements.chatContainer.appendChild(elements.chatIframe);
+
+    iframeState = new IframeState(elements.chatIframe);
 
     elements.loader = document.createElement("div");
     Object.assign(elements.loader.style, {
@@ -441,46 +522,11 @@ function initMainPage() {
       preloadChatIframe();
     });
 
-    elements.chatIframe.onload = () => {
-      if (iframeLoadFailed) return;
-      if (
-        elements.chatIframe.contentDocument &&
-        elements.chatIframe.contentDocument.querySelector(
-          "sub-frame-error-details",
-        )
-      ) {
-        showErrorMessage();
-        return;
-      }
-
-      clearTimeout(iframeLoadTimeout);
-      hideErrorMessage();
-      isIframeLoaded = true;
-
-      if (isChatVisible) hideLoader();
-      setButtonVisibility(isVideoPage());
-      if (!timer) {
-        timer = setInterval(() => {
-          if (!elements.chatIframe.src.includes("live_chat_replay")) {
-            return;
-          }
-          if (!elements.video.offsetParent) {
-            updateDOMElementsCache();
-          }
-          const currentTime = elements.video?.currentTime;
-          if (!currentTime) return;
-          const data = { "yt-player-video-progress": currentTime };
-          elements.chatIframe.contentWindow.postMessage(
-            { washOrigin: true, data: data },
-            "*",
-          );
-        }, 1000);
-      }
-    };
-
     preloadChatIframe();
 
     initializeObserver();
+
+    initializeMessageListener();
   };
 
   initialize();
