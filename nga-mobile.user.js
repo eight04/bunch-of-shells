@@ -3,7 +3,7 @@
 // @namespace          https://github.com/eight04
 // @description        nga mobile layout fix
 // @license            MIT
-// @version            0.1.0
+// @version            0.1.1
 // @match              https://bbs.nga.cn/*
 // @run-at document-start
 // @grant              GM_addStyle
@@ -18,6 +18,10 @@ GM_addStyle(`
 }
 #mc {
   width: 100% !important;
+}
+.postcontent img {
+  max-width: 100% !important;
+  margin: 0 !important;
 }
 `);
 
