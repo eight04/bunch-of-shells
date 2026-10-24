@@ -329,7 +329,7 @@ function initMainPage() {
     elements.videoPlayer = document.querySelector(".player-container");
     elements.video = elements.videoPlayer ? elements.videoPlayer.querySelector("video") : null;
     elements.infoContainer = document.querySelector(
-      ".slim-video-information-content",
+      ".slim-video-information-content, ytm-slim-video-metadata-section-renderer",
     );
   };
 
