@@ -87,7 +87,7 @@ function getContinuation() {
       onload: (response) => {
         if (response.status === 200) {
           const text = response.responseText;
-          const match = text.match(/"continuation":"([^"]+)"/);
+          const match = text.match(/"liveChatRenderer":[^}]+?"continuation":"([^"]+)"/);
           if (match) {
             resolve(match[1]);
           } else {
