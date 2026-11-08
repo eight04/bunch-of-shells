@@ -286,7 +286,7 @@ function initMainPage() {
     }
   };
 
-  const preloadChatIframe = ({forced = false} = {}) => {
+  const preloadChatIframe = async ({forced = false} = {}) => {
     const videoId = getVideoId();
 
     if (
@@ -308,18 +308,17 @@ function initMainPage() {
         const continuation = await getContinuation();
         return `https://www.youtube.com/live_chat_replay?embed_domain=${window.location.hostname}&dark_theme=1&continuation=${continuation}`;
       };
-      getNewIframeSrc().then(async (src) => {
-        showLoader();
-        try {
-          iframeState.src = src;
-          await iframeState.waitUntilLoaded();
-        } catch (error) {
-          console.error("Error loading chat iframe:", error);
-          showErrorMessage();
-        } finally {
-          hideLoader();
-        }
-      });
+      showLoader();
+      try {
+        const src = await getNewIframeSrc();
+        iframeState.src = src;
+        await iframeState.waitUntilLoaded();
+      } catch (error) {
+        console.error("Error loading chat iframe:", error);
+        showErrorMessage();
+      } finally {
+        hideLoader();
+      }
     } else if (videoId === currentVideoId && iframeState.loaded) {
       setButtonVisibility(true);
     }
